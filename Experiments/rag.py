@@ -11,7 +11,7 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, "Data", "shl_data.json")
 
-MODEL_NAME = 'all-mpnet-base-v2'
+MODEL_NAME = 'all-MiniLM-L6-v2'
 GEMINI_MODEL = "gemini-1.5-flash-latest"
 BATCH_SIZE = 32
 VECTOR_SEARCH_RESULTS = 50
@@ -19,7 +19,7 @@ VECTOR_SEARCH_RESULTS = 50
 print("Initializing SHL Assessment Recommender...")
 
 print("Loading embedding model...")
-model = SentenceTransformer(MODEL_NAME)
+model = SentenceTransformer(MODEL_NAME,device='cpu')
 
 client = chromadb.Client()
 
