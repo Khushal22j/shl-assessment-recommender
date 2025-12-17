@@ -3,8 +3,7 @@
 A GenAI-powered recommendation engine that maps Natural Language Queries and Job Descriptions (JDs) to relevant SHL Assessments.
 
 ## 🔗 Live Links
-*   **API Endpoints:** 1. https://shl-assessment-recommender-backend-05je.onrender.com/health
-*                      2. https://shl-assessment-recommender-backend-05je.onrender.com/recommend 
+*   **API Endpoints:**  https://shl-assessment-recommender-backend-05je.onrender.com/health  and https://shl-assessment-recommender-backend-05je.onrender.com/recommend
 *   **Frontend UI:** https://shl-assessment-recommender-hctvkr5qsd2ljiedxekwkc.streamlit.app/
 
 ## 📂 Project Structure
