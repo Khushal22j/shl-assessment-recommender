@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-API_URL = "http://localhost:8000/recommend"
+API_URL = "https://shl-assessment-recommender-backend-05je.onrender.com/recommend"
 
 st.title("SHL Assessment Recommender")
 st.write("Enter a Job Description, a specific query, or a URL to a JD.")
