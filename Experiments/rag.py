@@ -390,8 +390,3 @@ if __name__ == "__main__":
         print("System initialized successfully")
     else:
         print("Failed to initialize system")
-else:
-    if collection.count() == 0:
-        ingest_data()
-    else:
-        print("Vector DB already populated")
