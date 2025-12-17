@@ -1,60 +1,73 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import threading
+import logging
 
-app = FastAPI()
+from Experiments.rag import get_balanced_recommendations
 
-recommender_func = None
+app = FastAPI(
+    title="SHL Assessment Recommender API",
+    version="1.0.0"
+)
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("shl-api")
 
 class QueryRequest(BaseModel):
     query: str
 
+class Assessment(BaseModel):
+    url: str
+    name: str
+    description: str
+    duration: str | None
+    test_type: str | None
+    adaptive_support: bool | None
+    remote_support: bool | None
 
-def load_recommender():
-    global recommender_func
-    from Experiments.rag import get_balanced_recommendations
-    recommender_func = get_balanced_recommendations
-    print("Recommender loaded successfully")
-
-
-@app.on_event("startup")
-def startup_event():
-    thread = threading.Thread(target=load_recommender)
-    thread.daemon = True
-    thread.start()
-
+class RecommendationResponse(BaseModel):
+    recommended_assessments: list[Assessment]
 
 @app.get("/health")
-def health_check():
-    if recommender_func is None:
-        return {"status": "starting"}
-    return {"status": "healthy"}
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "shl-assessment-recommender"
+    }
 
-
-@app.post("/recommend")
-def recommend(request: QueryRequest):
-    if recommender_func is None:
-        return {"error": "Model is still loading. Please wait."}
+@app.post("/recommend", response_model=RecommendationResponse)
+async def recommend(request: QueryRequest):
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
 
     try:
-        recommendations = recommender_func(request.query, top_k=10)
-        formatted = []
+        logger.info(f"Received query: {request.query[:100]}")
 
+        recommendations = get_balanced_recommendations(
+            request.query,
+            top_k=10
+        )
+
+        formatted = []
         for rec in recommendations:
             formatted.append({
-                "url": rec["url"],
-                "name": rec["name"],
-                "description": rec["description"],
-                "duration": rec["duration"],
-                "test_type": rec["test_type"],
-                "adaptive_support": rec["adaptive_support"],
-                "remote_support": rec["remote_support"]
+                "url": rec.get("url"),
+                "name": rec.get("name"),
+                "description": rec.get("description"),
+                "duration": rec.get("duration"),
+                "test_type": rec.get("test_type"),
+                "adaptive_support": rec.get("adaptive_support"),
+                "remote_support": rec.get("remote_support"),
             })
 
-        return {"recommended_assessments": formatted}
+        logger.info(f"Returning {len(formatted)} recommendations")
 
-    except Exception as e:
-        print(f"Recommendation error: {e}")
-        return {"recommended_assessments": []}
+        return {
+            "recommended_assessments": formatted
+        }
 
+    except Exception:
+        logger.exception("Recommendation failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while generating recommendations"
+        )
