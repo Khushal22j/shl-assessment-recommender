@@ -5,10 +5,8 @@ import contextlib
 
 from Experiments.rag import get_balanced_recommendations, ingest_data, collection
 
-# LIFESPAN MANAGER (The modern way to handle startup in FastAPI)
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Load data if DB is empty
     logger.info("Checking Vector DB status...")
     if collection.count() == 0:
         logger.info("Vector DB is empty. Ingesting data...")
@@ -17,7 +15,6 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Vector DB already populated.")
     yield
-    # Shutdown logic (if any) goes here
 
 app = FastAPI(
     title="SHL Assessment Recommender API",
