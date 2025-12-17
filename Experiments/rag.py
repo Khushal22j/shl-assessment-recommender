@@ -7,19 +7,24 @@ import google.generativeai as genai
 from typing import List, Dict, Tuple
 from collections import defaultdict
 import numpy as np
+import gc  # <--- IMPORTANT: Added for memory management
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, "Data", "shl_data.json")
 
+# IMPORTANT: Using the Lite model (80MB) instead of the Base model (450MB)
 MODEL_NAME = 'all-MiniLM-L6-v2'
 GEMINI_MODEL = "gemini-1.5-flash-latest"
-BATCH_SIZE = 32
+
+# IMPORTANT: Reduced batch size to prevent Out of Memory (OOM) crashes on Render Free Tier
+BATCH_SIZE = 5 
 VECTOR_SEARCH_RESULTS = 50
 
 print("Initializing SHL Assessment Recommender...")
 
 print("Loading embedding model...")
-model = SentenceTransformer(MODEL_NAME,device='cpu')
+# Force CPU device to avoid looking for GPU drivers
+model = SentenceTransformer(MODEL_NAME, device='cpu')
 
 client = chromadb.Client()
 
@@ -254,7 +259,7 @@ def ingest_data():
     enriched_data = [enrich_assessment_data(item) for item in data]
     ids, documents, metadatas = [], [], []
 
-    print("Creating embeddings...")
+    print("Preparing documents for embedding...")
 
     for i, item in enumerate(enriched_data):
         doc_text = f"""
@@ -277,16 +282,36 @@ def ingest_data():
             'skills': item.get('skills', '')
         })
 
+    print("Creating embeddings (Optimized for Low RAM)...")
+
+    # IMPORTANT: Optimized Loop for Low Memory Environments
     for start_idx in range(0, len(ids), BATCH_SIZE):
         end_idx = min(start_idx + BATCH_SIZE, len(ids))
-        embeddings = model.encode(documents[start_idx:end_idx]).tolist()
+        
+        # Get small batch of documents
+        batch_docs = documents[start_idx:end_idx]
+        
+        # Encode batch
+        embeddings = model.encode(batch_docs)
+        
+        # Convert to list if it's a numpy array
+        if hasattr(embeddings, 'tolist'):
+            embeddings = embeddings.tolist()
+
+        # Add to ChromaDB
         collection.add(
             ids=ids[start_idx:end_idx],
             embeddings=embeddings,
             metadatas=metadatas[start_idx:end_idx],
-            documents=documents[start_idx:end_idx]
+            documents=batch_docs
         )
+        
         print(f"Processed {end_idx}/{len(ids)} assessments")
+        
+        # MEMORY CLEANUP: Crucial for free tier
+        del embeddings
+        del batch_docs
+        gc.collect()
 
     print(f"Vector database created with {collection.count()} items")
     return collection.count()
