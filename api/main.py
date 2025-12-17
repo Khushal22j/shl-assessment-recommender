@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SHL Assessment Recommender API",
     version="1.0.0",
-    lifespan=lifespan # Attach the lifespan logic here
+    lifespan=lifespan 
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -32,9 +32,9 @@ class Assessment(BaseModel):
     url: str
     name: str
     description: str
-    duration: str | None
-    test_type: str | list | None # updated to allow list
-    adaptive_support: bool | str | None # updated to allow string 'Yes'/'No'
+    duration: int | None
+    test_type: str | list | None 
+    adaptive_support: bool | str | None 
     remote_support: bool | str | None
 
 class RecommendationResponse(BaseModel):
@@ -66,7 +66,7 @@ async def recommend(request: QueryRequest):
                 "url": rec.get("url"),
                 "name": rec.get("name"),
                 "description": rec.get("description"),
-                "duration": str(rec.get("duration")), # Ensure string for Pydantic
+                "duration": str(rec.get("duration")),
                 "test_type": rec.get("test_type"),
                 "adaptive_support": rec.get("adaptive_support"),
                 "remote_support": rec.get("remote_support"),
@@ -79,7 +79,7 @@ async def recommend(request: QueryRequest):
         }
 
     except Exception as e:
-        logger.error(f"Recommendation failed: {str(e)}") # Log the actual error
+        logger.error(f"Recommendation failed: {str(e)}") 
         raise HTTPException(
             status_code=500,
             detail="Internal server error while generating recommendations"
